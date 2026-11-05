@@ -1,7 +1,7 @@
 
 const mongoose = require("mongoose");
 
-const User = require("../models/user");
+const User = require("../models/User");
 const Wallet = require("../models/Wallet");
 const Withdrawal = require("../models/Withdrawal");
 const WalletTransaction = require("../models/WalletTransaction");

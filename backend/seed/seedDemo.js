@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const connectDB = require("../src/config/db");
-const User = require("../src/models/user");
+const User = require("../src/models/User");
 const Wallet = require("../src/models/wallet");
 
 const seedDemo = async () => {

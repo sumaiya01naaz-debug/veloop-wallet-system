@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const mongoose = require("mongoose");
 const connectDB = require("../src/config/db");
-const User = require("../src/models/user");
+const User = require("../src/models/User");
 const WalletTransaction = require("../src/models/WalletTransaction");
 
 const seedTransactions = async () => {
