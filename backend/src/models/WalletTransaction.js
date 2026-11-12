@@ -62,6 +62,12 @@ const walletTransactionSchema = new mongoose.Schema(
 
 walletTransactionSchema.index({ userId: 1, createdAt: -1 });
 
+// Optimize transaction reference lookups
+walletTransactionSchema.index({ referenceId: 1 });
+
+// Optimize status-based transaction review
+walletTransactionSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model(
   "WalletTransaction",
   walletTransactionSchema

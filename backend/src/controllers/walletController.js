@@ -1,5 +1,7 @@
 const Wallet = require("../models/Wallet");
 const WalletTransaction = require("../models/WalletTransaction");
+const mongoose = require("mongoose");
+const Withdrawal = require("../models/Withdrawal");
 
 const getWallet = async (req, res) => {
   try {
@@ -32,7 +34,6 @@ const getWallet = async (req, res) => {
   }
 };
 
-module.exports = { getWallet };
 
 const getWalletTransactions = async (req, res) => {
   try {
@@ -78,8 +79,72 @@ const getWalletTransactions = async (req, res) => {
     });
   }
 };
+const getWalletSummary = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
 
+    const [wallet, withdrawalSummary, pendingWithdrawals] =
+      await Promise.all([
+        Wallet.findOne({ userId })
+          .select("ves updatedAt")
+          .lean(),
+
+        Withdrawal.aggregate([
+          {
+            $match: {
+              userId,
+              status: "APPROVED"
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalVes: { $sum: "$currencyAmount" },
+              totalPayout: { $sum: "$payoutAmount" }
+            }
+          }
+        ]),
+
+        Withdrawal.countDocuments({
+          userId,
+          status: { $in: ["PENDING", "PROCESSING"] }
+        })
+      ]);
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found."
+      });
+    }
+
+    const totals = withdrawalSummary[0] || {
+      totalVes: 0,
+      totalPayout: 0
+    };
+
+    return res.status(200).json({
+      success: true,
+      summary: {
+        availableVes: wallet.ves,
+        totalWithdrawnVes: totals.totalVes,
+        totalWithdrawnRupees: totals.totalPayout,
+        pendingWithdrawals,
+        updatedAt: wallet.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error("Wallet summary error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch wallet summary."
+    });
+  }
+};
 module.exports = {
   getWallet,
-  getWalletTransactions
+  getWalletTransactions,
+  getWalletSummary
 };

@@ -14,33 +14,91 @@ const createWithdrawal = async ({
   method,
   optionId,
   payoutDetails,
-  idempotencyKey
+  idempotencyKey,
+  ipAddress
 }) => {
   // Check required fields
-  if (!method || !optionId || !idempotencyKey) {
-    throw Object.assign(
-      new Error("Required withdrawal information is missing."),
-      { statusCode: 400 }
-    );
-  }
+  // Validate user ID
+if (!mongoose.isValidObjectId(userId)) {
+  throw Object.assign(
+    new Error("Invalid user ID."),
+    { statusCode: 400 }
+  );
+}
 
-  // For now, implement the verified UPI flow
-  if (method !== "upi") {
-    throw Object.assign(
-      new Error("This payout method is not yet configured."),
-      { statusCode: 400 }
-    );
-  }
+// Validate payout method
+if (typeof method !== "string" || !method.trim()) {
+  throw Object.assign(
+    new Error("Valid payout method is required."),
+    { statusCode: 400 }
+  );
+}
 
-  // Validate UPI ID
-  const upiId = payoutDetails?.upiId?.trim();
+method = method.trim().toLowerCase();
 
-  if (!upiId || !/^[\w.-]+@[A-Za-z0-9.-]+$/.test(upiId)) {
-    throw Object.assign(
-      new Error("Please provide a valid UPI ID."),
-      { statusCode: 400 }
-    );
-  }
+if (method !== "upi") {
+  throw Object.assign(
+    new Error("This payout method is not yet configured."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate payout option ID
+if (
+  typeof optionId !== "string" ||
+  !optionId.trim() ||
+  optionId.trim().length > 100
+) {
+  throw Object.assign(
+    new Error("Invalid payout option ID."),
+    { statusCode: 400 }
+  );
+}
+
+optionId = optionId.trim();
+
+// Validate idempotency key
+if (
+  typeof idempotencyKey !== "string" ||
+  !idempotencyKey.trim() ||
+  idempotencyKey.trim().length > 128
+) {
+  throw Object.assign(
+    new Error("Invalid idempotency key."),
+    { statusCode: 400 }
+  );
+}
+
+idempotencyKey = idempotencyKey.trim();
+
+// Validate payout details
+if (
+  !payoutDetails ||
+  typeof payoutDetails !== "object" ||
+  Array.isArray(payoutDetails)
+) {
+  throw Object.assign(
+    new Error("Valid payout details are required."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate UPI ID
+if (
+  typeof payoutDetails.upiId !== "string" ||
+  !payoutDetails.upiId.trim() ||
+  payoutDetails.upiId.trim().length > 100 ||
+  !/^[\w.-]+@[A-Za-z0-9.-]+$/.test(
+    payoutDetails.upiId.trim()
+  )
+) {
+  throw Object.assign(
+    new Error("Please provide a valid UPI ID."),
+    { statusCode: 400 }
+  );
+}
+
+const upiId = payoutDetails.upiId.trim();
 
   // Check duplicate request
   const existing = await Withdrawal.findOne({
@@ -167,9 +225,29 @@ const createWithdrawal = async ({
 
       // Link ledger to withdrawal
       newWithdrawal.transactionId = ledger._id;
-      await newWithdrawal.save({ session });
+await newWithdrawal.save({ session });
 
-      withdrawal = newWithdrawal;
+// Audit withdrawal creation
+await AuditLog.create(
+  [{
+    actorId: userId,
+    action: "WITHDRAWAL_CREATED",
+    targetUserId: userId,
+    targetType: "WITHDRAWAL",
+    referenceId: newWithdrawal._id.toString(),
+    metadata: {
+      method,
+      optionId,
+      currency: "VES",
+      currencyAmount: option.requiredAmount,
+      payoutAmount: option.payoutAmount
+    },
+    ipAddress
+  }],
+  { session }
+);
+
+withdrawal = newWithdrawal;
     });
 
     return withdrawal;
@@ -211,12 +289,18 @@ const processWithdrawal = async ({
         .session(session);
 
       if (!withdrawal) {
-        throw new Error("Withdrawal not found.");
-      }
+  throw Object.assign(
+    new Error("Withdrawal not found."),
+    { statusCode: 404 }
+  );
+}
 
-      if (!["PENDING", "PROCESSING"].includes(withdrawal.status)) {
-        throw new Error("Withdrawal has already been processed.");
-      }
+if (!["PENDING", "PROCESSING"].includes(withdrawal.status)) {
+  throw Object.assign(
+    new Error("Withdrawal has already been processed."),
+    { statusCode: 409 }
+  );
+}
 
       if (action === "REJECT" && !rejectionReason?.trim()) {
         throw new Error("Rejection reason is required.");
@@ -249,8 +333,11 @@ const processWithdrawal = async ({
       );
 
       if (!updated) {
-        throw new Error("Withdrawal has already been processed.");
-      }
+  throw Object.assign(
+    new Error("Withdrawal has already been processed."),
+    { statusCode: 409 }
+  );
+}
 
       // Refund VEs when withdrawal is rejected
       if (action === "REJECT") {

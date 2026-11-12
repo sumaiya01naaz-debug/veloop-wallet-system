@@ -38,5 +38,13 @@ const auditLogSchema = new mongoose.Schema(
 );
 
 auditLogSchema.index({ action: 1, createdAt: -1 });
+// Find audit events linked to a withdrawal or transaction
+auditLogSchema.index({ referenceId: 1 });
+
+// Find audit activity affecting a particular user
+auditLogSchema.index({ targetUserId: 1, createdAt: -1 });
+
+// Find actions performed by a particular admin
+auditLogSchema.index({ actorId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("AuditLog", auditLogSchema);

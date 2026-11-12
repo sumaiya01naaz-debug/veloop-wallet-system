@@ -2,25 +2,26 @@ const express = require("express");
 const router = express.Router();
 
 const protect = require("../middleware/authMiddleware");
+const requireAdmin = require("../middleware/adminMiddleware");
+
+const {
+  withdrawalLimiter
+} = require("../middleware/rateLimiters");
 
 const {
   submitWithdrawal,
   getWithdrawals,
-  getWithdrawalById
-} = require("../controllers/withdrawalController");
-
-const requireAdmin = require("../middleware/adminMiddleware");
-
-const {
+  getWithdrawalById,
   approveWithdrawalRequest,
   rejectWithdrawalRequest
 } = require("../controllers/withdrawalController");
 
-router.post("/", protect, submitWithdrawal);
+// User routes
+router.post("/", protect, withdrawalLimiter, submitWithdrawal);
 router.get("/", protect, getWithdrawals);
-
 router.get("/:id", protect, getWithdrawalById);
-// Admin approval
+
+// Admin routes
 router.patch(
   "/:id/approve",
   protect,
@@ -28,7 +29,6 @@ router.patch(
   approveWithdrawalRequest
 );
 
-// Admin rejection
 router.patch(
   "/:id/reject",
   protect,

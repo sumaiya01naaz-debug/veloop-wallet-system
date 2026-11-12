@@ -132,13 +132,17 @@ function Payout() {
         >
           {methods.map((method) => (
             <option
-              key={method.methodId}
-              value={method.methodId}
-              disabled={!method.available}
-            >
-              {method.name}
-              {!method.available ? " - Unavailable" : ""}
-            </option>
+  key={method.methodId}
+  value={method.methodId}
+  disabled={!method.available}
+>
+  {method.name}
+  {!method.available
+    ? ` - Unavailable${method.unavailableReason
+        ? ` (${method.unavailableReason})`
+        : ""}`
+    : ""}
+</option>
           ))}
         </select>
 

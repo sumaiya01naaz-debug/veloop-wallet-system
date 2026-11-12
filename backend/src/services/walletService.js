@@ -11,7 +11,7 @@ const currencyFields = {
   TOKENS: "tokens",
   SPINS: "spins"
 };
-
+const AuditLog = require("../models/AuditLog");
 const updateWallet = async ({
   userId,
   currency,
@@ -19,17 +19,99 @@ const updateWallet = async ({
   type,
   source,
   description,
-  referenceId
+  referenceId,
+  actorId,
+ipAddress
 }) => {
-  const field = currencyFields[currency];
+  // Validate user ID
+if (!mongoose.isValidObjectId(userId)) {
+  throw Object.assign(
+    new Error("Invalid user ID."),
+    { statusCode: 400 }
+  );
+}
 
-  if (!field) {
-    throw new Error("Invalid currency.");
-  }
+// Validate currency
+if (
+  typeof currency !== "string" ||
+  !Object.prototype.hasOwnProperty.call(
+    currencyFields,
+    currency
+  )
+) {
+  throw Object.assign(
+    new Error("Invalid currency."),
+    { statusCode: 400 }
+  );
+}
 
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    throw new Error("Amount must be a positive integer.");
-  }
+const field = currencyFields[currency];
+
+// Validate transaction type
+if (!["CREDIT", "DEBIT"].includes(type)) {
+  throw Object.assign(
+    new Error("Invalid transaction type."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate amount
+if (!Number.isSafeInteger(amount) || amount <= 0) {
+  throw Object.assign(
+    new Error("Amount must be a positive integer."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate transaction source
+if (
+  typeof source !== "string" ||
+  !source.trim() ||
+  source.trim().length > 100
+) {
+  throw Object.assign(
+    new Error("Valid transaction source is required."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate description
+if (
+  typeof description !== "string" ||
+  !description.trim() ||
+  description.trim().length > 250
+) {
+  throw Object.assign(
+    new Error("Valid transaction description is required."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate optional reference ID
+if (
+  referenceId !== undefined &&
+  referenceId !== null &&
+  (
+    typeof referenceId !== "string" ||
+    referenceId.length > 150
+  )
+) {
+  throw Object.assign(
+    new Error("Invalid reference ID."),
+    { statusCode: 400 }
+  );
+}
+
+// Validate optional admin ID
+if (
+  actorId !== undefined &&
+  !mongoose.isValidObjectId(actorId)
+) {
+  throw Object.assign(
+    new Error("Invalid actor ID."),
+    { statusCode: 400 }
+  );
+}
 
   const session = await mongoose.startSession();
 
@@ -91,6 +173,29 @@ const updateWallet = async ({
       );
 
       transaction = ledgerEntry;
+      if (actorId) {
+  await AuditLog.create(
+    [{
+      actorId,
+      action: type === "CREDIT"
+        ? "WALLET_CREDIT"
+        : "WALLET_DEBIT",
+      targetUserId: userId,
+      targetType: "WALLET",
+      referenceId: ledgerEntry._id.toString(),
+      metadata: {
+        currency,
+        amount,
+        source,
+        balanceBefore,
+        balanceAfter,
+        description
+      },
+      ipAddress
+    }],
+    { session }
+  );
+}
     });
 
     return transaction;

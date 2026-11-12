@@ -76,5 +76,15 @@ withdrawalSchema.index(
   { userId: 1, idempotencyKey: 1 },
   { unique: true }
 );
+// Optimize withdrawal history queries
+withdrawalSchema.index({ userId: 1, createdAt: -1 });
+
+withdrawalSchema.index({
+  userId: 1,
+  status: 1,
+  createdAt: -1
+});
+// Optimize lookup by wallet transaction ID
+withdrawalSchema.index({ transactionId: 1 });
 
 module.exports = mongoose.model("Withdrawal", withdrawalSchema);
