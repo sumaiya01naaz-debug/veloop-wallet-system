@@ -14,7 +14,7 @@ const allowedCurrencies = [
   "SPINS"
 ];
 
-const adjustWallet = (type) => async (req, res) => {
+const adjustWallet = (type, sourceOverride = null) => async (req, res) => {
   try {
     const {
       userId,
@@ -82,9 +82,11 @@ const adjustWallet = (type) => async (req, res) => {
       userId: targetUser._id,
       currency,
       amount,
-      source: type === "CREDIT"
-        ? "ADMIN_CREDIT"
-        : "ADMIN_DEBIT",
+      source: sourceOverride || (
+  type === "CREDIT"
+    ? "ADMIN_CREDIT"
+    : "ADMIN_DEBIT"
+),
       description: description.trim(),
       referenceId,
       actorId: req.user.userId,
@@ -97,7 +99,9 @@ const adjustWallet = (type) => async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Wallet ${type.toLowerCase()} successful.`,
+      message: sourceOverride
+  ? "Wallet balance correction successful."
+  : `Wallet ${type.toLowerCase()} successful.`,
       transaction
     });
 } catch (error) {
@@ -119,11 +123,29 @@ const adjustWallet = (type) => async (req, res) => {
   });
 }
 };
+const adminCorrectWallet = async (req, res) => {
+  const direction =
+    typeof req.body?.direction === "string"
+      ? req.body.direction.toUpperCase()
+      : "";
 
+  if (!["CREDIT", "DEBIT"].includes(direction)) {
+    return res.status(400).json({
+      success: false,
+      message: "Direction must be CREDIT or DEBIT."
+    });
+  }
+
+  return adjustWallet(
+    direction,
+    "BALANCE_CORRECTION"
+  )(req, res);
+};
 const adminCreditWallet = adjustWallet("CREDIT");
 const adminDebitWallet = adjustWallet("DEBIT");
 
 module.exports = {
   adminCreditWallet,
-  adminDebitWallet
+  adminDebitWallet,
+  adminCorrectWallet
 };

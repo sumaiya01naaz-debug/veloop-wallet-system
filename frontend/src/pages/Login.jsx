@@ -22,9 +22,17 @@ function Login() {
         password
       });
 
-      sessionStorage.setItem("token", response.data.token);
+      const { token, user } = response.data;
 
-      navigate("/wallet");
+      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("role", user.role);
+      sessionStorage.setItem("userName", user.name);
+
+      if (user.role === "ADMIN") {
+        navigate("/admin");
+      } else {
+        navigate("/wallet");
+      }
 
     } catch (err) {
       setError(

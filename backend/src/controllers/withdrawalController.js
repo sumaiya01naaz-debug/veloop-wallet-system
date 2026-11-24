@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 const {
   createWithdrawal,
   approveWithdrawal,
-  rejectWithdrawal
+  rejectWithdrawal,
+  markWithdrawalProcessing,
+  cancelWithdrawal
 } = require("../services/withdrawalService");
 
 const submitWithdrawal = async (req, res) => {
@@ -259,11 +261,94 @@ const rejectWithdrawalRequest = async (req, res) => {
     });
   }
 };
+const cancelWithdrawalRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid withdrawal ID."
+      });
+    }
+
+    const withdrawal = await cancelWithdrawal({
+      withdrawalId: id,
+      userId: req.user.userId,
+      ipAddress: req.ip
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Withdrawal cancelled and VES refunded.",
+      withdrawal
+    });
+  } catch (error) {
+    console.error("Withdrawal cancellation error:", error.message);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode
+        ? error.message
+        : "Unable to cancel withdrawal."
+    });
+  }
+};
+
+const processWithdrawalRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reviewNote } = req.body || {};
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid withdrawal ID."
+      });
+    }
+
+    if (
+      reviewNote !== undefined &&
+      (
+        typeof reviewNote !== "string" ||
+        reviewNote.trim().length > 500
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Review note must not exceed 500 characters."
+      });
+    }
+
+    const withdrawal = await markWithdrawalProcessing({
+      withdrawalId: id,
+      adminId: req.user.userId,
+      reviewNote: reviewNote?.trim() || "",
+      ipAddress: req.ip
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Withdrawal moved to processing.",
+      withdrawal
+    });
+  } catch (error) {
+    console.error("Withdrawal processing error:", error.message);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode
+        ? error.message
+        : "Unable to process withdrawal."
+    });
+  }
+};
 module.exports = {
   submitWithdrawal,
   getWithdrawals,
   getWithdrawalById,
   approveWithdrawalRequest,
-  rejectWithdrawalRequest
+  rejectWithdrawalRequest,
+  processWithdrawalRequest,
+  cancelWithdrawalRequest
 };

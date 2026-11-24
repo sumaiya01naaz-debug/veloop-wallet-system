@@ -20,7 +20,13 @@ const auditLogSchema = new mongoose.Schema(
 
     targetType: {
       type: String,
-      enum: ["USER", "WALLET", "WITHDRAWAL", "PAYOUT_OPTION"],
+      enum: [
+  "USER",
+  "WALLET",
+  "WITHDRAWAL",
+  "PAYOUT_OPTION",
+  "PAYOUT_METHOD"
+],
       required: true
     },
 

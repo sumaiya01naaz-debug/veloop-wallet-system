@@ -13,7 +13,9 @@ const {
   getWithdrawals,
   getWithdrawalById,
   approveWithdrawalRequest,
-  rejectWithdrawalRequest
+  rejectWithdrawalRequest,
+  processWithdrawalRequest,
+  cancelWithdrawalRequest
 } = require("../controllers/withdrawalController");
 
 // User routes
@@ -34,6 +36,21 @@ router.patch(
   protect,
   requireAdmin,
   rejectWithdrawalRequest
+);
+
+// User cancellation: users can cancel only their own pending withdrawal.
+router.patch(
+  "/:id/cancel",
+  protect,
+  cancelWithdrawalRequest
+);
+
+// Admin review: move a pending withdrawal into processing.
+router.patch(
+  "/:id/process",
+  protect,
+  requireAdmin,
+  processWithdrawalRequest
 );
 
 module.exports = router;

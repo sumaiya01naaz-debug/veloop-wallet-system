@@ -356,3 +356,452 @@ body {
     font-size: 15px;
   }
 }
+
+/* Admin Dashboard */
+
+.admin-container {
+  min-height: 100vh;
+  background: #101827;
+  color: white;
+}
+
+.admin-header {
+  background: #1e293b;
+}
+
+.admin-content {
+  width: 92%;
+  max-width: 1200px;
+  margin: 35px auto;
+}
+
+.admin-content > p {
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 25px 0;
+}
+
+.admin-tab {
+  padding: 12px 18px;
+  border: 1px solid #475569;
+  border-radius: 7px;
+  background: #1e293b;
+  color: white;
+  cursor: pointer;
+}
+
+.admin-tab.active {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.admin-panel {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+}
+
+.admin-panel h2,
+.admin-panel h3,
+.admin-panel h4 {
+  margin-bottom: 16px;
+}
+
+.nested-panel {
+  background: #0f172a;
+  border: 1px solid #475569;
+}
+
+.admin-search {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.admin-search input {
+  flex: 1;
+}
+
+.admin-search input,
+.admin-form input,
+.admin-form select,
+.admin-panel > select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 7px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: white;
+  margin: 8px 0 15px;
+}
+
+.admin-panel button,
+.admin-search button,
+.admin-form button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  margin: 5px 5px 5px 0;
+}
+
+.admin-panel button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-table-wrapper {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 14px;
+  border-bottom: 1px solid #475569;
+}
+
+.admin-table th {
+  color: #94a3b8;
+}
+
+.admin-balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 20px 0 30px;
+}
+
+.admin-balance {
+  background: #1e293b;
+  padding: 18px;
+  border-radius: 8px;
+}
+
+.admin-balance span {
+  display: block;
+  color: #94a3b8;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.admin-balance strong {
+  font-size: 20px;
+}
+
+.admin-form {
+  max-width: 550px;
+  margin-top: 20px;
+}
+
+.admin-form label {
+  display: block;
+  margin-top: 12px;
+}
+
+.admin-list {
+  margin-top: 20px;
+}
+
+.admin-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 18px 0;
+  border-bottom: 1px solid #475569;
+}
+
+.admin-list-item p {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+}
+
+.admin-json {
+  background: #020617;
+  color: #cbd5e1;
+  padding: 14px;
+  border-radius: 7px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+
+.admin-danger {
+  background: #b91c1c !important;
+}
+
+.admin-message {
+  margin: 15px 0;
+}
+
+.admin-container .error {
+  color: #f87171;
+}
+
+@media (max-width: 600px) {
+  .admin-content {
+    width: 94%;
+  }
+
+  .admin-panel {
+    padding: 15px;
+  }
+
+  .admin-search {
+    flex-direction: column;
+  }
+}
+
+/* Withdrawal Confirmation Modal */
+
+.confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirmation-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 14px;
+  padding: 28px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.confirmation-modal h2 {
+  margin-bottom: 10px;
+}
+
+.confirmation-modal > p {
+  color: #cbd5e1;
+  margin-bottom: 18px;
+}
+
+.confirmation-details {
+  background: #0f172a;
+  border-radius: 9px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.confirmation-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid #334155;
+}
+
+.confirmation-details > div:last-child {
+  border-bottom: none;
+}
+
+.confirmation-details span {
+  color: #94a3b8;
+}
+
+.confirmation-details strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.confirmation-modal .confirmation-warning {
+  color: #fbbf24;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.confirmation-actions button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.confirmation-actions .cancel-button {
+  background: #475569;
+}
+
+.confirmation-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Wallet refresh and success message */
+
+.wallet-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wallet-success {
+  background: #14532d;
+  padding: 14px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.wallet-error {
+  margin: 15px 0;
+}
+
+.transactions-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.transactions-heading .secondary-button {
+  margin-top: 0;
+}
+
+@media (max-width: 500px) {
+  .confirmation-modal {
+    padding: 20px;
+  }
+
+  .confirmation-details > div {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .confirmation-details strong {
+    text-align: left;
+  }
+
+  .wallet-header-actions {
+    justify-content: flex-end;
+  }
+}
+
+/* Complete Transaction History */
+
+.history-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 25px 0;
+}
+
+.history-tabs button {
+  padding: 12px 18px;
+  border: 1px solid #475569;
+  border-radius: 7px;
+  background: #1e293b;
+  color: white;
+  cursor: pointer;
+}
+
+.history-tabs button.active-filter {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.history-panel {
+  background: #1e293b;
+  padding: 22px;
+  border-radius: 12px;
+}
+
+.history-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.history-pagination button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.history-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.history-pagination span {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.history-amount small {
+  color: #94a3b8;
+  text-align: right;
+}
+
+.status.success {
+  background: #14532d;
+  color: #86efac;
+}
+
+.status.failed,
+.status.cancelled {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+@media (max-width: 600px) {
+  .history-panel {
+    padding: 14px;
+  }
+
+  .history-card {
+    flex-direction: column;
+  }
+
+  .history-amount {
+    align-items: flex-start;
+  }
+
+  .history-amount small {
+    text-align: left;
+  }
+}

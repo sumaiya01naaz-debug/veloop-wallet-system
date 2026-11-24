@@ -42,15 +42,25 @@ const withdrawalSchema = new mongoose.Schema(
       required: true
     },
 
-    status: {
-      type: String,
-      enum: ["PENDING", "PROCESSING", "APPROVED", "REJECTED", "CANCELLED"],
-      default: "PENDING"
-    },
+   status: {
+  type: String,
+  enum: ["PENDING", "PROCESSING", "APPROVED", "REJECTED", "CANCELLED"],
+  default: "PENDING"
+},
 
-    rejectionReason: String,
+riskReviewRequired: {
+  type: Boolean,
+  default: false
+},
 
-    reviewNote: String,
+riskReason: {
+  type: String,
+  default: null
+},
+
+rejectionReason: String,
+
+reviewNote: String,
 
     idempotencyKey: {
       type: String,

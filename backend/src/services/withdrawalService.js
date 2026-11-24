@@ -154,7 +154,18 @@ const upiId = payoutDetails.upiId.trim();
     let withdrawal;
 
     await session.withTransaction(async () => {
+     const tenMinutesAgo = new Date(
+  Date.now() - 10 * 60 * 1000
+);
 
+const recentRequestCount = await Withdrawal.countDocuments({
+  userId,
+  createdAt: { $gte: tenMinutesAgo }
+}).session(session);
+
+// The third or subsequent request within 10 minutes
+// requires manual review.
+const riskReviewRequired = recentRequestCount >= 2;
       // Deduct VEs only if sufficient balance exists
       const wallet = await Wallet.findOneAndUpdate(
         {
@@ -200,8 +211,12 @@ const upiId = payoutDetails.upiId.trim();
           currencyAmount: option.requiredAmount,
           payoutAmount: option.payoutAmount,
           payoutDetails: { upiId },
-          status: "PENDING",
-          idempotencyKey
+          status: riskReviewRequired ? "PROCESSING" : "PENDING",
+riskReviewRequired,
+riskReason: riskReviewRequired
+  ? "Multiple withdrawal requests within 10 minutes."
+  : null,
+idempotencyKey
         }],
         { session }
       );
@@ -246,6 +261,26 @@ await AuditLog.create(
   }],
   { session }
 );
+
+// ADD THIS CODE HERE
+if (riskReviewRequired) {
+  await AuditLog.create(
+    [{
+      actorId: userId,
+      action: "SUSPICIOUS_ACTIVITY_DETECTED",
+      targetUserId: userId,
+      targetType: "WITHDRAWAL",
+      referenceId: newWithdrawal._id.toString(),
+      metadata: {
+        reason: "Multiple withdrawal requests within 10 minutes.",
+        recentRequestCount: recentRequestCount + 1,
+        reviewRequired: true
+      },
+      ipAddress
+    }],
+    { session }
+  );
+}
 
 withdrawal = newWithdrawal;
     });
@@ -414,9 +449,201 @@ const approveWithdrawal = (data) =>
 const rejectWithdrawal = (data) =>
   processWithdrawal({ ...data, action: "REJECT" });
 
+const markWithdrawalProcessing = async ({
+  withdrawalId,
+  adminId,
+  reviewNote,
+  ipAddress
+}) => {
+  const session = await mongoose.startSession();
+
+  try {
+    let result;
+
+    await session.withTransaction(async () => {
+      const withdrawal = await Withdrawal.findOneAndUpdate(
+        {
+          _id: withdrawalId,
+          status: "PENDING"
+        },
+        {
+          $set: {
+            status: "PROCESSING",
+            reviewNote: reviewNote || ""
+          }
+        },
+        {
+          session,
+          returnDocument: "after"
+        }
+      );
+
+      if (!withdrawal) {
+        const existing = await Withdrawal.findById(withdrawalId)
+          .session(session);
+
+        if (!existing) {
+          throw Object.assign(
+            new Error("Withdrawal not found."),
+            { statusCode: 404 }
+          );
+        }
+
+        throw Object.assign(
+          new Error("Only pending withdrawals can be moved to processing."),
+          { statusCode: 409 }
+        );
+      }
+
+      await AuditLog.create(
+        [{
+          actorId: adminId,
+          action: "WITHDRAWAL_PROCESSING",
+          targetUserId: withdrawal.userId,
+          targetType: "WITHDRAWAL",
+          referenceId: withdrawal._id.toString(),
+          metadata: {
+            reviewNote: reviewNote || ""
+          },
+          ipAddress
+        }],
+        { session }
+      );
+
+      result = withdrawal;
+    });
+
+    return result;
+  } finally {
+    await session.endSession();
+  }
+};
+
+
+const cancelWithdrawal = async ({
+  withdrawalId,
+  userId,
+  ipAddress
+}) => {
+  const session = await mongoose.startSession();
+
+  try {
+    let result;
+
+    await session.withTransaction(async () => {
+      const existing = await Withdrawal.findOne({
+        _id: withdrawalId,
+        userId
+      }).session(session);
+
+      if (!existing) {
+        throw Object.assign(
+          new Error("Withdrawal not found."),
+          { statusCode: 404 }
+        );
+      }
+
+      if (existing.status !== "PENDING") {
+        throw Object.assign(
+          new Error("Only pending withdrawals can be cancelled."),
+          { statusCode: 409 }
+        );
+      }
+
+      const withdrawal = await Withdrawal.findOneAndUpdate(
+        {
+          _id: withdrawalId,
+          userId,
+          status: "PENDING"
+        },
+        {
+          $set: {
+            status: "CANCELLED",
+            processedAt: new Date()
+          }
+        },
+        {
+          session,
+          returnDocument: "after"
+        }
+      );
+
+      if (!withdrawal) {
+        throw Object.assign(
+          new Error("Withdrawal status changed. Please refresh and try again."),
+          { statusCode: 409 }
+        );
+      }
+
+      // Refund the deducted VES.
+      const wallet = await Wallet.findOneAndUpdate(
+        { userId },
+        {
+          $inc: {
+            ves: withdrawal.currencyAmount
+          }
+        },
+        {
+          session,
+          returnDocument: "after",
+          runValidators: true
+        }
+      );
+
+      if (!wallet) {
+        throw new Error("Wallet not found. Cancellation refund failed.");
+      }
+
+      const balanceAfter = wallet.ves;
+      const balanceBefore = balanceAfter - withdrawal.currencyAmount;
+
+      // Record the refund in the wallet ledger.
+      await WalletTransaction.create(
+        [{
+          userId,
+          currency: "VES",
+          type: "CREDIT",
+          amount: withdrawal.currencyAmount,
+          balanceBefore,
+          balanceAfter,
+          source: "WITHDRAWAL_CANCEL_REFUND",
+          referenceId: withdrawal._id.toString(),
+          status: "SUCCESS",
+          description: "Refund for cancelled withdrawal"
+        }],
+        { session }
+      );
+
+      // Record the cancellation in the audit log.
+      await AuditLog.create(
+        [{
+          actorId: userId,
+          action: "WITHDRAWAL_CANCELLED",
+          targetUserId: userId,
+          targetType: "WITHDRAWAL",
+          referenceId: withdrawal._id.toString(),
+          metadata: {
+            refundedAmount: withdrawal.currencyAmount,
+            currency: "VES"
+          },
+          ipAddress
+        }],
+        { session }
+      );
+
+      result = withdrawal;
+    });
+
+    return result;
+  } finally {
+    await session.endSession();
+  }
+};
 
 module.exports = {
   createWithdrawal,
   approveWithdrawal,
-  rejectWithdrawal
+  rejectWithdrawal,
+  markWithdrawalProcessing,
+  cancelWithdrawal
 };

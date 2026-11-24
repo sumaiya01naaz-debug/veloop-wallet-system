@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const payoutRoutes = require("./routes/payoutRoutes");
 const withdrawalRoutes = require("./routes/withdrawalRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -35,5 +36,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/payout", payoutRoutes);
 app.use("/api/withdrawals", withdrawalRoutes);
+app.use("/api/admin", adminRoutes);
 
 module.exports = app;

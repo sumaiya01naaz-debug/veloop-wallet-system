@@ -177,15 +177,18 @@ if (
   await AuditLog.create(
     [{
       actorId,
-      action: type === "CREDIT"
-        ? "WALLET_CREDIT"
-        : "WALLET_DEBIT",
+      action: source === "BALANCE_CORRECTION"
+  ? "BALANCE_CORRECTION"
+  : type === "CREDIT"
+    ? "WALLET_CREDIT"
+    : "WALLET_DEBIT",
       targetUserId: userId,
       targetType: "WALLET",
       referenceId: ledgerEntry._id.toString(),
       metadata: {
         currency,
         amount,
+        type,
         source,
         balanceBefore,
         balanceAfter,
