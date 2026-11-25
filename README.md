@@ -192,6 +192,7 @@ The current implementation establishes the basic correctness controls: atomic ba
 5. Use Redis-backed distributed rate limiting and short-lived caching for non-financial reads. Cached balances must never authorize a debit.
 6. Add metrics, structured logs, tracing, alerts and scheduled reconciliation with an operational exception queue.
 7. Review indexes using production query plans, archive older audit/ledger data according to retention policy and load-test concurrent withdrawal traffic.
+8. Expand fraud detection into a dedicated risk-scoring capability. Evaluate request frequency, unusual withdrawal amounts, repeated payout destinations and suspicious account/device activity. Route high-risk requests to manual review, retain the risk reason in audit records, and tune thresholds using observed fraud patterns. The current implementation provides basic repeated-withdrawal detection; the broader scoring capability is a proposed scale-up improvement.
 
 These are proposed scale-up improvements, not features claimed as already implemented.
 
